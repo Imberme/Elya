@@ -166,8 +166,20 @@ if st.button("התחל חיזוי"):
                     try:
                         prediction = model.predict(last_lookback)
                         next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
-                        st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
-                        
+
+                        # מחיר המניה של היום
+                        current_price = scaler.inverse_transform([data_scaled[-1]])[0][3]
+
+                        # חישוב הפער
+                        price_difference = next_price - current_price
+                        percentage_change = (price_difference / current_price) * 100
+                        change_direction = "עלייה" if price_difference > 0 else "ירידה"
+
+                        # הצגת התוצאות
+                        st.write(f"### מחיר המניה היום: ${current_price:.2f}")
+                        st.write(f"### מחיר המניה החזוי למחר: ${next_price:.2f}")
+                        st.write(f"### הפער בין המחירים: ${price_difference:.2f} ({percentage_change:.2f}% {change_direction})")
+
                         # הוספת סיכום תהליך החיזוי
                         st.write("### שורה תחתונה - סיכום תהליך החיזוי:")
                         st.write(f"""
