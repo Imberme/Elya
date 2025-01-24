@@ -7,12 +7,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import requests
-import os
 
-# הגבלת שימוש ב-GPU
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-# בסיס נתונים להערכת מהימנות מקורות (לדוגמה בלבד)
+# בסיס נתונים להערכת מהימנות מקורות (דוגמה בלבד)
 source_reliability = {
     "source1": 0.9,
     "source2": 0.8,
@@ -22,7 +18,7 @@ source_reliability = {
 # פונקציה לאיסוף חדשות
 def fetch_news(ticker):
     try:
-        API_KEY = "your_newsapi_key_here"  # הכנס מפתח API תקף
+        API_KEY = "your_newsapi_key_here"  # הכנס את מפתח ה-API שלך
         url = f"https://newsapi.org/v2/everything?q={ticker}&sortBy=publishedAt&apiKey={API_KEY}"
         response = requests.get(url)
         news_data = response.json()
@@ -141,5 +137,3 @@ if st.button("התחל חיזוי"):
                 next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
 
                 st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
-            else:
-                st.error("שגיאה בעיבוד הנתונים. נסה שוב עם קלטים אחרים.")
