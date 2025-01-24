@@ -66,7 +66,6 @@ def prepare_data(data, sentiment_score, lookback=60):
     try:
         X, y = [], []
         for i in range(lookback, len(data)):
-            # מוסיפים את הסנטימנט לכל צעד בזמן (timesteps)
             timestep_data = np.hstack((data[i-lookback:i], np.full((lookback, 1), sentiment_score)))
             X.append(timestep_data)
             y.append(data[i, -1])  # עמודת היעד היא מחיר הסגירה
@@ -168,6 +167,16 @@ if st.button("התחל חיזוי"):
                         prediction = model.predict(last_lookback)
                         next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
                         st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
+                        
+                        # הוספת סיכום תהליך החיזוי
+                        st.write("### שורה תחתונה - סיכום תהליך החיזוי:")
+                        st.write(f"""
+                        - **מספר חלונות הזמן שנלמדו**: {X.shape[0]} חלונות (רצפים של 60 ימים).
+                        - **מספר ימים בכל חלון**: {X.shape[1]} ימים.
+                        - **מספר הנתונים לכל יום**: {X.shape[2]} נתונים (כולל סנטימנט).
+                        - **נתונים אחרונים לחיזוי**: 60 הימים האחרונים + ציון סנטימנט משוקלל.
+                        - **תוצאה**: המחיר החזוי של המניה ליום הבא הוא **${next_price:.2f}**.
+                        """)
                     except Exception as e:
                         st.error(f"שגיאה בעת חיזוי המחיר: {e}")
                         st.stop()
