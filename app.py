@@ -8,7 +8,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import requests
 
-# בסיס נתונים להערכת מהימנות מקורות
+# בסיס נתונים להערכת מהימנות מקורות (לדוגמה בלבד)
 source_reliability = {
     "source1": 0.9,
     "source2": 0.8,
@@ -66,6 +66,7 @@ def prepare_data(data, sentiment_score, lookback=60):
     try:
         X, y = [], []
         for i in range(lookback, len(data)):
+            # מוסיפים את הסנטימנט לכל צעד בזמן (timesteps)
             timestep_data = np.hstack((data[i-lookback:i], np.full((lookback, 1), sentiment_score)))
             X.append(timestep_data)
             y.append(data[i, -1])  # עמודת היעד היא מחיר הסגירה
@@ -149,17 +150,17 @@ if st.button("התחל חיזוי"):
 
                     # יצירת last_lookback
                     try:
-                        last_lookback = data_scaled[-lookback:, :-1]
+                        last_lookback = data_scaled[-lookback:, :]  # כל העמודות
                         last_lookback = np.hstack((last_lookback, np.full((lookback, 1), sentiment_score)))
-                        last_lookback = last_lookback.reshape(1, last_lookback.shape[0], last_lookback.shape[1])
-                        st.write(f"### צורת last_lookback: {last_lookback.shape}")
+                        last_lookback = last_lookback.reshape(1, last_lookback.shape[0], last_lookback.shape[1])  # התאמה למודל
+                        st.write(f"צורת last_lookback: {last_lookback.shape}")
                     except Exception as e:
                         st.error(f"שגיאה ביצירת last_lookback: {e}")
                         st.stop()
 
-                    # בדיקה לצורה תקינה לפני חיזוי
-                    if last_lookback.shape != (1, lookback, data_scaled.shape[1]):
-                        st.error("שגיאה: צורת last_lookback אינה תואמת את הדרישות של המודל.")
+                    # בדיקה לצורה תקינה
+                    if last_lookback.shape[2] != X.shape[2]:
+                        st.error(f"שגיאה: מספר התכונות ב-last_lookback ({last_lookback.shape[2]}) אינו תואם למודל ({X.shape[2]}).")
                         st.stop()
 
                     # חיזוי המחיר הבא
