@@ -119,23 +119,26 @@ if st.button("התחל חיזוי"):
             data_scaled = scaler.fit_transform(data)
 
             # עיבוד הנתונים
-            X, y = prepare_data(data_scaled, sentiment_score, lookback)
-
-            if X is None or X.shape[0] == 0:
-                st.error("שגיאה בעיבוד הנתונים: לא נוצרו נתוני עיבוד. נסה טווח תאריכים גדול יותר.")
+            if len(data_scaled) < lookback:
+                st.error("לא מספיק נתונים בטווח התאריכים שנבחר. נסה לבחור טווח גדול יותר.")
             else:
-                X = X.reshape(X.shape[0], X.shape[1], X.shape[2])
+                X, y = prepare_data(data_scaled, sentiment_score, lookback)
 
-                # בניית ואימון המודל
-                model = build_model((X.shape[1], X.shape[2]))
-                st.write("### מודל ה-LSTM מאומן...")
-                model.fit(X, y, epochs=20, batch_size=32, verbose=1)
+                if X is None or X.shape[0] == 0:
+                    st.error("שגיאה בעיבוד הנתונים: לא נוצרו נתוני עיבוד. נסה טווח תאריכים גדול יותר.")
+                else:
+                    X = X.reshape(X.shape[0], X.shape[1], X.shape[2])
 
-                # חיזוי המחיר הבא
-                last_lookback = data_scaled[-lookback:, :-1]
-                last_lookback = np.append(last_lookback, sentiment_score)
-                last_lookback = last_lookback.reshape(1, last_lookback.shape[0], last_lookback.shape[1])
-                prediction = model.predict(last_lookback)
-                next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
+                    # בניית ואימון המודל
+                    model = build_model((X.shape[1], X.shape[2]))
+                    st.write("### מודל ה-LSTM מאומן...")
+                    model.fit(X, y, epochs=20, batch_size=32, verbose=1)
 
-                st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
+                    # חיזוי המחיר הבא
+                    last_lookback = data_scaled[-lookback:, :-1]
+                    last_lookback = np.append(last_lookback, sentiment_score)
+                    last_lookback = last_lookback.reshape(1, last_lookback.shape[0], last_lookback.shape[1])
+                    prediction = model.predict(last_lookback)
+                    next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
+
+                    st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
