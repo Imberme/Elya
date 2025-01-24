@@ -22,7 +22,7 @@ source_reliability = {
 # פונקציה לאיסוף חדשות
 def fetch_news(ticker):
     try:
-        API_KEY = "your_newsapi_key_here"
+        API_KEY = "your_newsapi_key_here"  # הכנס מפתח API תקף
         url = f"https://newsapi.org/v2/everything?q={ticker}&sortBy=publishedAt&apiKey={API_KEY}"
         response = requests.get(url)
         news_data = response.json()
@@ -49,7 +49,7 @@ def analyze_sentiment(headlines):
         weighted_sentiment.append(sentiment * reliability)
     return np.mean(weighted_sentiment) if weighted_sentiment else 0
 
-# פונקציה לאיסוף נתונים
+# פונקציה לאיסוף נתוני מניה
 def get_stock_data(ticker, start_date, end_date):
     try:
         stock = yf.Ticker(ticker)
@@ -103,13 +103,20 @@ if st.button("התחל חיזוי"):
         # שליפת נתוני מניה
         data = get_stock_data(ticker, start_date, end_date)
         if not data.empty:
-            st.write("נתונים שהתקבלו:")
+            st.write("### נתונים היסטוריים של המניה:")
             st.write(data.head())
 
             # שליפת חדשות וניתוח סנטימנט
             headlines = fetch_news(ticker)
+            if headlines:
+                st.write("### כותרות חדשותיות:")
+                for headline, source in headlines:
+                    st.write(f"- {headline} (מקור: {source})")
+            else:
+                st.write("לא נמצאו כותרות חדשותיות.")
+
             sentiment_score = analyze_sentiment(headlines)
-            st.write(f"ציון סנטימנט משוקלל: {sentiment_score:.2f}")
+            st.write(f"### ציון סנטימנט משוקלל: {sentiment_score:.2f}")
 
             # נרמול הנתונים
             scaler = MinMaxScaler()
@@ -123,6 +130,7 @@ if st.button("התחל חיזוי"):
 
                 # בניית ואימון המודל
                 model = build_model((X.shape[1], X.shape[2]))
+                st.write("### מודל ה-LSTM מאומן...")
                 model.fit(X, y, epochs=20, batch_size=32, verbose=1)
 
                 # חיזוי המחיר הבא
@@ -132,6 +140,6 @@ if st.button("התחל חיזוי"):
                 prediction = model.predict(last_lookback)
                 next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
 
-                st.success(f"מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
+                st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
             else:
                 st.error("שגיאה בעיבוד הנתונים. נסה שוב עם קלטים אחרים.")
