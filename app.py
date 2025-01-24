@@ -67,6 +67,8 @@ def prepare_data(data, sentiment_score, lookback=60):
         for i in range(lookback, len(data)):
             X.append(np.append(data[i-lookback:i, :-1], sentiment_score))  # הוספת סנטימנט מחושב
             y.append(data[i, -1])  # עמודת היעד היא מחיר הסגירה
+        if len(X) == 0 or len(y) == 0:
+            return None, None
         return np.array(X), np.array(y)
     except Exception as e:
         st.error(f"שגיאה בעיבוד הנתונים: {e}")
@@ -118,9 +120,9 @@ if st.button("התחל חיזוי"):
             scaler = MinMaxScaler()
             data_scaled = scaler.fit_transform(data)
 
-            # עיבוד הנתונים
+            # בדיקה אם יש מספיק נתונים
             if len(data_scaled) < lookback:
-                st.error("לא מספיק נתונים בטווח התאריכים שנבחר. נסה לבחור טווח גדול יותר.")
+                st.error("לא מספיק נתונים בטווח התאריכים שנבחר. נסה לבחור טווח תאריכים גדול יותר.")
             else:
                 X, y = prepare_data(data_scaled, sentiment_score, lookback)
 
