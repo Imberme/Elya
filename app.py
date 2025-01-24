@@ -8,7 +8,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import requests
 
-# בסיס נתונים להערכת מהימנות מקורות (לדוגמה בלבד)
+# בסיס נתונים להערכת מהימנות מקורות (דוגמה בלבד)
 source_reliability = {
     "source1": 0.9,
     "source2": 0.8,
@@ -52,6 +52,7 @@ def get_stock_data(ticker, start_date, end_date):
         data = stock.history(start=start_date, end=end_date)
         if data.empty:
             st.error("לא נמצאו נתונים עבור סמל המניה או טווח התאריכים.")
+            return pd.DataFrame()
         data['MA20'] = data['Close'].rolling(window=20).mean()
         data['MA50'] = data['Close'].rolling(window=50).mean()
         data = data[['Open', 'High', 'Low', 'Close', 'Volume', 'MA20', 'MA50']].dropna()
@@ -129,7 +130,16 @@ if st.button("התחל חיזוי"):
                 if X is None or X.shape[0] == 0:
                     st.error("שגיאה בעיבוד הנתונים: לא נוצרו נתוני עיבוד. נסה טווח תאריכים גדול יותר.")
                 else:
-                    X = X.reshape(X.shape[0], X.shape[1], X.shape[2])
+                    st.write("### צורת הנתונים לעיבוד:")
+                    st.write(f"צורת X: {X.shape}")
+                    st.write(f"צורת y: {y.shape}")
+
+                    # שינוי צורת הנתונים
+                    try:
+                        X = X.reshape(X.shape[0], X.shape[1], X.shape[2])
+                    except Exception as e:
+                        st.error(f"שגיאה בשינוי צורת הנתונים: {e}")
+                        st.stop()
 
                     # בניית ואימון המודל
                     model = build_model((X.shape[1], X.shape[2]))
