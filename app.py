@@ -8,7 +8,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import requests
 
-# בסיס נתונים להערכת מהימנות מקורות (לדוגמה בלבד)
+# בסיס נתונים להערכת מהימנות מקורות
 source_reliability = {
     "source1": 0.9,
     "source2": 0.8,
@@ -66,7 +66,6 @@ def prepare_data(data, sentiment_score, lookback=60):
     try:
         X, y = [], []
         for i in range(lookback, len(data)):
-            # מוסיפים את הסנטימנט לכל צעד בזמן (timesteps)
             timestep_data = np.hstack((data[i-lookback:i], np.full((lookback, 1), sentiment_score)))
             X.append(timestep_data)
             y.append(data[i, -1])  # עמודת היעד היא מחיר הסגירה
@@ -148,11 +147,26 @@ if st.button("התחל חיזוי"):
                     st.write("### מודל ה-LSTM מאומן...")
                     model.fit(X, y, epochs=20, batch_size=32, verbose=1)
 
-                    # חיזוי המחיר הבא
-                    last_lookback = data_scaled[-lookback:, :-1]
-                    last_lookback = np.hstack((last_lookback, np.full((lookback, 1), sentiment_score)))
-                    last_lookback = last_lookback.reshape(1, last_lookback.shape[0], last_lookback.shape[1])
-                    prediction = model.predict(last_lookback)
-                    next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
+                    # יצירת last_lookback
+                    try:
+                        last_lookback = data_scaled[-lookback:, :-1]
+                        last_lookback = np.hstack((last_lookback, np.full((lookback, 1), sentiment_score)))
+                        last_lookback = last_lookback.reshape(1, last_lookback.shape[0], last_lookback.shape[1])
+                        st.write(f"### צורת last_lookback: {last_lookback.shape}")
+                    except Exception as e:
+                        st.error(f"שגיאה ביצירת last_lookback: {e}")
+                        st.stop()
 
-                    st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
+                    # בדיקה לצורה תקינה לפני חיזוי
+                    if last_lookback.shape != (1, lookback, data_scaled.shape[1]):
+                        st.error("שגיאה: צורת last_lookback אינה תואמת את הדרישות של המודל.")
+                        st.stop()
+
+                    # חיזוי המחיר הבא
+                    try:
+                        prediction = model.predict(last_lookback)
+                        next_price = scaler.inverse_transform([[0, 0, 0, prediction[0][0], 0, 0, 0]])[0, 3]
+                        st.write(f"### מחיר החיזוי הבא למניה {ticker}: ${next_price:.2f}")
+                    except Exception as e:
+                        st.error(f"שגיאה בעת חיזוי המחיר: {e}")
+                        st.stop()
